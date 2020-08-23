@@ -1,0 +1,23 @@
+{
+  "id": "2009132",
+  "name": "myProject",
+  "font_family": "iconfont",
+  "css_prefix_text": "icon-",
+  "description": "",
+  "glyphs": [
+    {
+      "icon_id": "312436",
+      "name": "user",
+      "font_class": "user",
+      "unicode": "e62d",
+      "unicode_decimal": 58925
+    },
+    {
+      "icon_id": "7712708",
+      "name": "password",
+      "font_class": "password",
+      "unicode": "e734",
+      "unicode_decimal": 59188
+    }
+  ]
+}
