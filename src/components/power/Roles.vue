@@ -58,7 +58,8 @@
             </el-button>
             <el-button type="danger" icon="el-icon-delete" size="mini" @click="removeRoleById(scope.row.id)">删除
             </el-button>
-            <el-button type="warning" icon="el-icon-setting" size="mini" @click="showSetRightDialog(scope.row)">分配权限</el-button>
+            <el-button type="warning" icon="el-icon-setting" size="mini" @click="showSetRightDialog(scope.row)">分配权限
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -100,10 +101,10 @@
     <el-dialog title="分配权限" :visible.sync="setRightDialogVisible" width="50%" @close="setRightDialogClosed">
       <!-- 树形控件 -->
       <el-tree :data="rightsList" :props="treeProps" show-checkbox node-key="id" default-expand-all
-               :default-checked-keys="defKeys"></el-tree>
+               :default-checked-keys="defKeys" ref="treeRef"></el-tree>
       <span slot="footer" class="dialog-footer">
     <el-button @click="setRightDialogVisible = false">取 消</el-button>
-    <el-button type="primary" @click="setRightDialogVisible = false">确 定</el-button>
+    <el-button type="primary" @click="allotRights">确 定</el-button>
   </span>
     </el-dialog>
   </div>
@@ -155,7 +156,9 @@
           children: 'children'
         },
         // 分配角色权限的树形控件 默认选中的节点ID值数组
-        defKeys: []
+        defKeys: [],
+        // 当前即将分配权限的角色ID
+        roleId: ''
       }
     },
     created() {
@@ -230,7 +233,7 @@
         this.$message.success('删除角色成功！')
         this.getRolesList()
       },
-      // 根据id删除对应提示
+      // 根据id删除对应权限
       async removeRightById(role, rightId) {
         // 询问用户是否删除数据
         const confirmResult = await this.$confirm('此操作将永久删除该权限, 是否继续?', '提示', {
@@ -250,6 +253,7 @@
       },
       // 展示分配角色权限的对话框
       async showSetRightDialog(role) {
+        this.roleId = role.id
         // 获取所有权限的数据
         const { data: res } = await this.$http.get('rights/tree')
         if (res.meta.status !== 200) {
@@ -270,6 +274,24 @@
       // 监听分配角色权限对话框的关闭事件
       setRightDialogClosed() {
         this.defKeys = []
+      },
+      // 点击确定 保存选中权限
+      async allotRights() {
+        // ...为ES6扩展操作符，将数组或者对象合并成一个数组或者对象
+        // 这里 key 值为一个包含所有已选中的权限ID 和 所有半选状态的权限ID
+        const keys = [
+          ...this.$refs.treeRef.getCheckedKeys(),
+          ...this.$refs.treeRef.getHalfCheckedKeys()
+        ]
+        // 将数组变成以英文逗号分隔的字符串，传到api接口中，用于保存角色权限
+        const idStr = keys.join(',')
+        const { data: res } = await this.$http.post(`roles/${this.roleId}/rights`, { rids: idStr })
+        if (res.meta.status !== 200) {
+          return this.$message.error('分配权限失败！')
+        }
+        this.$message.success('分配权限成功！')
+        this.getRolesList()
+        this.setRightDialogVisible = false
       }
     }
   }
