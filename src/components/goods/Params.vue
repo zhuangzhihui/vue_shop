@@ -23,6 +23,18 @@
           </el-cascader>
         </el-col>
       </el-row>
+
+      <!-- tab 页签区域 -->
+      <el-tabs v-model="activeName" @tab-click="handleTabClick">
+        <!-- 添加动态参数面板 -->
+        <el-tab-pane label="动态参数" name="many">
+          <el-button type="primary" size="mini" :disabled="isBtnDisabled">动态参数</el-button>
+        </el-tab-pane>
+        <!-- 添加静态属性面板 -->
+        <el-tab-pane label="静态属性" name="only">
+          <el-button type="primary" size="mini" :disabled="isBtnDisabled">静态属性</el-button>
+        </el-tab-pane>
+      </el-tabs>
     </el-card>
   </div>
 </template>
@@ -35,7 +47,13 @@
         // 商品分类列表数据
         cateList: [],
         // 级联选择器双向绑定到的数组
-        selectedCateKeys: []
+        selectedCateKeys: [],
+        // 被激活的 Tab 面板
+        activeName: 'many',
+        // many 面板数据
+        manyTabData: [],
+        // only 面板数据
+        onlyTabData: []
       }
     },
     created() {
@@ -51,11 +69,46 @@
       },
       // 级联选择器选中项变化，触发的函数
       handleChanged() {
+        this.getParamsData()
+      },
+      // tab 页签点击事件
+      handleTabClick() {
+        this.getParamsData()
+      },
+      // 获取参数的列表数据
+      async getParamsData() {
         if (this.selectedCateKeys.length !== 3) {
           this.selectedCateKeys = []
           return
         }
-        console.log(this.selectedCateKeys)
+        // 根据所选分类的ID 和当前所处的面板 获取对应的参数
+        const { data: res } = await this.$http.get(`categories/${this.cateId}/attributes`, { params: { sel: this.activeName } })
+        if (res.meta.status !== 200) {
+          return this.$message.error('获取参数列表失败！')
+        }
+        if (this.activeName === 'many') {
+          this.manyTabData = res.data
+        } else {
+          this.onlyTabData = res.data
+        }
+        console.log(this.manyTabData)
+        console.log(this.onlyTabData)
+      }
+    },
+    computed: {
+      // 如果按钮需要被禁用，则返回true，否则返回false
+      isBtnDisabled() {
+        if (this.selectedCateKeys.length !== 3) {
+          return true
+        }
+        return false
+      },
+      // 当前选中的三级分类ID
+      cateId() {
+        if (this.selectedCateKeys.length === 3) {
+          return this.selectedCateKeys[2]
+        }
+        return null
       }
     }
   }
