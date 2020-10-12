@@ -143,6 +143,7 @@
     },
     methods: {
       async getCateList() {
+        console.log('111')
         const { data: res } = await this.$http.get('categories')
         if (res.meta.status !== 200) {
           return this.$message.error('获取分类列表失败！')
