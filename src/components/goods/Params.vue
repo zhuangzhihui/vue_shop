@@ -173,8 +173,6 @@
         } else {
           this.onlyTabData = res.data
         }
-        console.log(this.manyTableData)
-        console.log(this.onlyTabData)
       },
       // 监听添加参数对话框的关闭事件
       addDialogClosed() {
