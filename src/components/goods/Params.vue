@@ -148,6 +148,7 @@
           return this.$message.error('获取分类列表失败！')
         }
         this.cateList = res.data
+        console.log(this.cateList)
       },
       // 级联选择器选中项变化，触发的函数
       handleChanged() {
