@@ -33,7 +33,12 @@
           </el-button>
           <!-- 动态参数表格 -->
           <el-table :data="manyTableData" border stripe>
-            <el-table-column type="expand"></el-table-column>
+            <!-- 展开行 -->
+            <el-table-column type="expand">
+              <template slot-scope="scope">
+                <el-tag v-for="(item, i) in scope.row.attr_vals" :key="i" closable>{{item}}</el-tag>
+              </template>
+            </el-table-column>
             <!-- 索引列 -->
             <el-table-column type="index"></el-table-column>
             <el-table-column label="参数名称" prop="attr_name"></el-table-column>
@@ -169,6 +174,12 @@
         if (res.meta.status !== 200) {
           return this.$message.error('获取参数列表失败！')
         }
+        res.data.forEach(item => {
+          // 对于新添加的参数，它的 attr_vals 为空，此时如果直接split(' ')，则结果为[' ']，最终渲染出一个空的标签。
+          // 需要进行一次判断，当为空时，赋值一个空的数组[]，而不是[' ']
+          item.attr_vals = item.attr_vals ? item.attr_vals.split(' ') : []
+        })
+        console.log(res.data)
         if (this.activeName === 'many') {
           this.manyTableData = res.data
         } else {
@@ -272,5 +283,8 @@
 <style lang="less" scoped>
   .cat_opt {
     margin: 15px 0;
+  }
+  .el-tag {
+    margin: 5px;
   }
 </style>
