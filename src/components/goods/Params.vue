@@ -36,7 +36,21 @@
             <!-- 展开行 -->
             <el-table-column type="expand">
               <template slot-scope="scope">
-                <el-tag v-for="(item, i) in scope.row.attr_vals" :key="i" closable>{{item}}</el-tag>
+                <el-tag v-for="(item, i) in scope.row.attr_vals" :key="i" closable @close="handleChose(i, scope.row)">{{item}}</el-tag>
+                <!-- 输入文本框 -->
+                <el-input
+                  class="input-new-tag"
+                  v-if="scope.row.inputVisible"
+                  v-model="scope.row.inputValue"
+                  ref="saveTagInput"
+                  size="small"
+                  @keyup.enter.native="handleInputConfirm(scope.row)"
+                  @blur="handleInputConfirm(scope.row)"
+                >
+                </el-input>
+                <!-- 添加按钮 -->
+                <el-button v-else class="button-new-tag" size="small" @click="showInput(scope.row)">+ New Tag
+                </el-button>
               </template>
             </el-table-column>
             <!-- 索引列 -->
@@ -60,7 +74,26 @@
           </el-button>
           <!-- 静态属性表格 -->
           <el-table :data="onlyTabData" border stripe>
-            <el-table-column type="expand"></el-table-column>
+            <!-- 展开行 -->
+            <el-table-column type="expand">
+              <template slot-scope="scope">
+                <el-tag v-for="(item, i) in scope.row.attr_vals" :key="i" closable @close="handleChose(i, scope.row)">{{item}}</el-tag>
+                <!-- 输入文本框 -->
+                <el-input
+                  class="input-new-tag"
+                  v-if="scope.row.inputVisible"
+                  v-model="scope.row.inputValue"
+                  ref="saveTagInput"
+                  size="small"
+                  @keyup.enter.native="handleInputConfirm(scope.row)"
+                  @blur="handleInputConfirm(scope.row)"
+                >
+                </el-input>
+                <!-- 添加按钮 -->
+                <el-button v-else class="button-new-tag" size="small" @click="showInput(scope.row)">+ New Tag
+                </el-button>
+              </template>
+            </el-table-column>
             <!-- 索引列 -->
             <el-table-column type="index"></el-table-column>
             <el-table-column label="参数名称" prop="attr_name"></el-table-column>
@@ -69,7 +102,8 @@
                 <el-button size="mini" type="primary" icon="el-icon-edit" @click="showEditDialog(scope.row.attr_id)">
                   编辑
                 </el-button>
-                <el-button size="mini" type="danger" icon="el-icon-delete" @click="removeParams(scope.row.attr_id)">删除</el-button>
+                <el-button size="mini" type="danger" icon="el-icon-delete" @click="removeParams(scope.row.attr_id)">删除
+                </el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -165,8 +199,11 @@
       },
       // 获取参数的列表数据
       async getParamsData() {
+        // 证明选中的不是三级分类
         if (this.selectedCateKeys.length !== 3) {
           this.selectedCateKeys = []
+          this.manyTableData = []
+          this.onlyTabData = []
           return
         }
         // 根据所选分类的ID 和当前所处的面板 获取对应的参数
@@ -178,6 +215,10 @@
           // 对于新添加的参数，它的 attr_vals 为空，此时如果直接split(' ')，则结果为[' ']，最终渲染出一个空的标签。
           // 需要进行一次判断，当为空时，赋值一个空的数组[]，而不是[' ']
           item.attr_vals = item.attr_vals ? item.attr_vals.split(' ') : []
+          // 控制文本框的显示与隐藏
+          item.inputVisible = false
+          // 文本框输入的值
+          item.inputValue = ''
         })
         console.log(res.data)
         if (this.activeName === 'many') {
@@ -252,6 +293,44 @@
         }
         this.$message.success('删除参数成功！')
         this.getParamsData()
+      },
+      // 文本框失去焦点或按下 enter 键
+      async handleInputConfirm(row) {
+        if (row.inputValue.trim().length === 0) {
+          row.inputValue = ''
+          row.inputVisible = false
+          return
+        }
+        // 用户输入了正确信息，做下一步处理
+        row.attr_vals.push(row.inputValue.trim())
+        row.inputValue = ''
+        row.inputVisible = false
+        this.saveAttrVals(row)
+      },
+      // 将对attr_vals的操作保存搭配数据库
+      async saveAttrVals(row) {
+        // 发起请求保存数据
+        const { data: res } = await this.$http.put(`categories/${this.cateId}/attributes/${row.attr_id}`, {
+          attr_name: row.attr_name,
+          attr_sel: row.attr_sel,
+          attr_vals: row.attr_vals.join(' ')
+        })
+        if (res.meta.status !== 200) {
+          return this.$message.error('修改参数项失败！')
+        }
+        this.$message.success('修改参数项成功！')
+      },
+      // 点击按钮 显示输入框
+      showInput(row) {
+        row.inputVisible = true
+        this.$nextTick(_ => {
+          this.$refs.saveTagInput.$refs.input.focus()
+        })
+      },
+      // 删除参数项
+      handleChose(i, row) {
+        row.attr_vals.splice(i, 1)
+        this.saveAttrVals(row)
       }
     },
     computed: {
@@ -284,7 +363,12 @@
   .cat_opt {
     margin: 15px 0;
   }
+
   .el-tag {
     margin: 5px;
+  }
+
+  .input-new-tag {
+    width: 100px;
   }
 </style>
