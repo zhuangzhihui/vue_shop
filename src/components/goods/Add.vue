@@ -51,8 +51,18 @@
               </el-checkbox-group>
             </el-form-item>
           </el-tab-pane>
-          <el-tab-pane label="商品属性" name="2">商品属性</el-tab-pane>
-          <el-tab-pane label="商品图片" name="3">商品图片</el-tab-pane>
+          <el-tab-pane label="商品属性" name="2">
+            <el-form-item :label="item.attr_name" v-for="item in onlyTableData" :key="item.attr_id">
+              <el-input v-model="item.attr_vals"></el-input>
+            </el-form-item>
+          </el-tab-pane>
+          <el-tab-pane label="商品图片" name="3">
+            <!-- 由于upload图片上传组件是自己内部封装的ajax请求，而并没有添加token请求头，因此需要手动为headers请求头绑定token -->
+            <el-upload :action="uploadUrl" :on-preview="handlePreview" :on-remove="handleRemove" list-type="picture"
+                       :headers="headerObj" :on-success="handleSuccess">
+              <el-button size="small" type="primary">点击上传</el-button>
+            </el-upload>
+          </el-tab-pane>
           <el-tab-pane label="商品内容" name="4">商品内容</el-tab-pane>
         </el-tabs>
       </el-form>
@@ -73,7 +83,8 @@
           goods_price: 0,
           goods_weight: 0,
           goods_number: 0,
-          goods_cat: []
+          goods_cat: [],
+          pics: []
         },
         // 添加商品的表单验证规则
         addFormRules: {
@@ -96,7 +107,15 @@
         // 商品分类数据列表
         cateList: [],
         // 动态参数的对象
-        manyTableData: []
+        manyTableData: [],
+        // 静态属性的对象
+        onlyTableData: [],
+        // 图片上传的api地址
+        uploadUrl: 'https://www.liulongbin.top:8888/api/private/v1/upload',
+        // 为图片上传组件的header请求头 添加token
+        headerObj: {
+          Authorization: window.sessionStorage.getItem('token')
+        }
       }
     },
     created() {
@@ -135,7 +154,30 @@
             item.attr_vals = item.attr_vals.length === 0 ? [] : item.attr_vals.split(' ')
           })
           this.manyTableData = res.data
+        } else if (this.activeIndex === '2') {
+          const { data: res } = await this.$http.get(`categories/${this.cateId}/attributes`, { params: { sel: 'only' } })
+          if (res.meta.status !== 200) {
+            return this.$message.error('获取静态属性失败！')
+          }
+          console.log(res.data)
+          this.onlyTableData = res.data
         }
+      },
+      // 图片预览事件
+      handlePreview() {
+      },
+      // 删除图片事件
+      handleRemove(file) {
+        const filePath = file.response.data.tmp_path
+        const i = this.addForm.pics.findIndex(x => x.pic === filePath)
+        this.addForm.pics.splice(i, 1)
+        console.log(this.addForm)
+      },
+      // 图片上传成功
+      handleSuccess(response) {
+        const picInfo = { pic: response.data.tmp_path }
+        this.addForm.pics.push(picInfo)
+        console.log(this.addForm)
       }
     },
     computed: {
@@ -150,4 +192,7 @@
 </script>
 
 <style lang="less" scoped>
+  .el-checkbox {
+    margin: 0 10px 0 0 !important;
+  }
 </style>
