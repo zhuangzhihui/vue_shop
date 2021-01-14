@@ -63,14 +63,26 @@
               <el-button size="small" type="primary">点击上传</el-button>
             </el-upload>
           </el-tab-pane>
-          <el-tab-pane label="商品内容" name="4">商品内容</el-tab-pane>
+          <el-tab-pane label="商品内容" name="4">
+            <!-- 富文本编辑器组件 -->
+            <quill-editor v-model="addForm.goods_introduce"></quill-editor>
+            <!-- 添加商品的按钮 -->
+            <el-button type="primary" class="btnAdd" @click="add">添加商品</el-button>
+          </el-tab-pane>
         </el-tabs>
       </el-form>
     </el-card>
+
+    <!-- 图片预览 -->
+    <el-dialog title="图片预览" :visible.sync="previewVisible" width="50%">
+      <img :src="previewPath" alt="" class="previewImg">
+    </el-dialog>
   </div>
 </template>
 
 <script>
+  import _ from 'lodash'
+
   export default {
     name: 'Add',
     data() {
@@ -84,7 +96,11 @@
           goods_weight: 0,
           goods_number: 0,
           goods_cat: [],
-          pics: []
+          pics: [],
+          // 商品详情描述
+          goods_introduce: '',
+          // 动态参数，静态属性
+          attrs: []
         },
         // 添加商品的表单验证规则
         addFormRules: {
@@ -115,7 +131,11 @@
         // 为图片上传组件的header请求头 添加token
         headerObj: {
           Authorization: window.sessionStorage.getItem('token')
-        }
+        },
+        // 图片真实地址
+        previewPath: '',
+        // 控制图片预览的显示与隐藏
+        previewVisible: false
       }
     },
     created() {
@@ -149,7 +169,6 @@
           if (res.meta.status !== 200) {
             return this.$message.error('获取动态参数失败！')
           }
-          console.log(this.manyTableData)
           res.data.forEach(item => {
             item.attr_vals = item.attr_vals.length === 0 ? [] : item.attr_vals.split(' ')
           })
@@ -159,25 +178,63 @@
           if (res.meta.status !== 200) {
             return this.$message.error('获取静态属性失败！')
           }
-          console.log(res.data)
           this.onlyTableData = res.data
         }
       },
       // 图片预览事件
-      handlePreview() {
+      handlePreview(file) {
+        this.previewPath = file.response.data.url
+        this.previewVisible = true
       },
       // 删除图片事件
       handleRemove(file) {
         const filePath = file.response.data.tmp_path
         const i = this.addForm.pics.findIndex(x => x.pic === filePath)
         this.addForm.pics.splice(i, 1)
-        console.log(this.addForm)
       },
       // 图片上传成功
       handleSuccess(response) {
         const picInfo = { pic: response.data.tmp_path }
         this.addForm.pics.push(picInfo)
-        console.log(this.addForm)
+      },
+      // 添加商品
+      add() {
+        this.$refs.addFormRef.validate(async valid => {
+          if (!valid) {
+            return this.$message.error('请填写必要的表单项目')
+          }
+          // 表单验证通过 提交ajax请求，添加商品
+          // lodash cloneDeep(obj) 深拷贝
+          // 如果直接对 addForm.goods_cat 进行 .join(',') 操作，cascader级联选择器会报错，因为它只接受数组形式
+          const form = _.cloneDeep(this.addForm)
+          form.goods_cat = form.goods_cat.join(',')
+          // 处理动态参数
+          this.manyTableData.forEach(item => {
+            const newInfo = {
+              attr_id: item.attr_id,
+              attr_value: item.attr_vals.join(' ')
+            }
+            this.addForm.attrs.push(newInfo)
+          })
+          // 处理静态属性
+          this.onlyTableData.forEach(item => {
+            const newInfo = {
+              attr_id: item.attr_id,
+              attr_value: item.attr_vals
+            }
+            this.addForm.attrs.push(newInfo)
+          })
+          form.attrs = this.addForm.attrs
+          console.log(form)
+
+          // 数据处理完成 发起添加商品请求 商品名称唯一
+          const { data: res } = await this.$http.post('goods', form)
+          if (res.meta.status !== 201) {
+            return this.$message.error('添加商品失败！')
+          }
+          this.$message.success('添加商品成功！')
+          this.$router.push('/goods')
+        })
       }
     },
     computed: {
@@ -194,5 +251,13 @@
 <style lang="less" scoped>
   .el-checkbox {
     margin: 0 10px 0 0 !important;
+  }
+
+  .previewImg {
+    width: 100%;
+  }
+
+  .btnAdd {
+    margin-top: 15px;
   }
 </style>
