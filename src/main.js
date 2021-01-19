@@ -11,15 +11,25 @@ import VueQuillEditor from 'vue-quill-editor'
 import 'quill/dist/quill.core.css'
 import 'quill/dist/quill.snow.css'
 import 'quill/dist/quill.bubble.css'
+// 导入 NProgress 进度条
+import NProgress from 'nprogress'
+import 'nprogress/nprogress.css'
 
 import axios from 'axios'
 // 配置请求的根路径
 axios.defaults.baseURL = 'https://www.liulongbin.top:8888/api/private/v1/'
 // axios 请求拦截器添加token，保证拥有获取数据的权限（除了登录外的其它接口，均需要用户登录才有获取数据的权限）
+// 在 request 拦截器中添加进度条 NProgress.start()
 axios.interceptors.request.use(config => {
+  NProgress.start()
   // 为请求头对象，添加Token验证的Authorization字段，字段的值为token
   config.headers.Authorization = window.sessionStorage.getItem('token')
   // 固定写法  在最后必须return config
+  return config
+})
+// 在 response 拦截器中 隐藏进度条 NProgress.done()
+axios.interceptors.response.use(config => {
+  NProgress.done()
   return config
 })
 Vue.prototype.$http = axios
