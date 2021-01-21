@@ -1,19 +1,14 @@
 import Vue from 'vue'
 import App from './App.vue'
 import router from './router'
-import './plugins/element.js'
 import './assets/fonts/iconfont.css'
 import TreeTable from 'vue-table-with-tree-grid'
 // 导入全局样式表
 import './assets/css/global.css'
 // 导入富文本编辑器
 import VueQuillEditor from 'vue-quill-editor'
-import 'quill/dist/quill.core.css'
-import 'quill/dist/quill.snow.css'
-import 'quill/dist/quill.bubble.css'
 // 导入 NProgress 进度条
 import NProgress from 'nprogress'
-import 'nprogress/nprogress.css'
 
 import axios from 'axios'
 // 配置请求的根路径
